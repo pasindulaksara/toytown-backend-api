@@ -1,0 +1,13 @@
+RewriteEngine On
+
+# If request is exactly /api (no trailing slash), redirect to /api/
+RewriteCond %{THE_REQUEST} \s/+toytown-api/api\s [NC]
+RewriteRule ^$ /toytown-api/api/ [R=301,L]
+
+# Serve existing files/folders normally
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Route everything else to index.php
+RewriteRule ^(.*)$ index.php?path=$1 [QSA,L]
