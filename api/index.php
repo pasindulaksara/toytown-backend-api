@@ -26,13 +26,23 @@ require_once __DIR__ . "/../src/Controllers/ParentsController.php";
 $router = new Router();
 
 // Health check
-$router->add("GET", "", function () {
+$router->add("GET", "", function ($params = []) {
     Response::json(["ok" => true, "message" => "ToyTown API running"]);
 });
 
 // Parents
-$router->add("GET", "parents", [ParentsController::class, "index"]);
-$router->add("POST", "parents", [ParentsController::class, "store"]);
+$router->add("GET", "parents", function ($params = []) {
+    ParentsController::index();
+});
+
+$router->add("POST", "parents", function ($params = []) {
+    ParentsController::store();
+});
+
+$router->add("GET", "parents/{id}", function ($params) {
+    ParentsController::show((int)$params["id"]);
+});
+
 
 // Dispatch
 $router->dispatch(Request::method(), Request::path());

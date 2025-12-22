@@ -70,4 +70,21 @@ class ParentsRepository
     return $stmt->fetchAll();
 }
 
+public static function getByIdWithChildren(PDO $pdo, int $id): ?array
+{
+    $stmt = $pdo->prepare("SELECT id, name, phone, created_at FROM parents WHERE id = ? LIMIT 1");
+    $stmt->execute([$id]);
+    $parent = $stmt->fetch();
+
+    if (!$parent) return null;
+
+    $cStmt = $pdo->prepare("SELECT id, parent_id, name, age FROM children WHERE parent_id = ? ORDER BY id ASC");
+    $cStmt->execute([$id]);
+    $children = $cStmt->fetchAll();
+
+    $parent["children"] = $children;
+    return $parent;
+}
+
+
 }

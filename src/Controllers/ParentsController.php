@@ -45,4 +45,20 @@ class ParentsController
     ]);
 }
 
+public static function show(int $id): void
+{
+    $pdo = db();
+
+    $parent = ParentsRepository::getByIdWithChildren($pdo, $id);
+
+    if (!$parent) {
+        Response::json(["ok" => false, "error" => "Parent not found"], 404);
+    }
+
+    Response::json([
+        "ok" => true,
+        "data" => $parent
+    ]);
+}
+
 }
