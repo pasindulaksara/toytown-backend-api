@@ -18,10 +18,11 @@ require_once __DIR__ . "/../src/Core/Request.php";
 require_once __DIR__ . "/../src/Core/Response.php";
 require_once __DIR__ . "/../src/Utils/Validators.php";
 require_once __DIR__ . "/../src/Repositories/ParentsRepository.php";
+require_once __DIR__ . "/../src/Repositories/SessionsRepository.php";
 
 // Controllers
 require_once __DIR__ . "/../src/Controllers/ParentsController.php";
-
+require_once __DIR__ . "/../src/Controllers/SessionsController.php";
 // Init router
 $router = new Router();
 
@@ -41,6 +42,20 @@ $router->add("POST", "parents", function ($params = []) {
 
 $router->add("GET", "parents/{id}", function ($params) {
     ParentsController::show((int)$params["id"]);
+});
+
+
+//sessions
+$router->add("POST", "sessions/start", function ($params = []) {
+    SessionsController::start();
+});
+
+$router->add("GET", "sessions", function ($params = []) {
+    SessionsController::index();
+});
+
+$router->add("POST", "sessions/{id}/end", function ($params) {
+    SessionsController::end((int)$params["id"]);
 });
 
 
