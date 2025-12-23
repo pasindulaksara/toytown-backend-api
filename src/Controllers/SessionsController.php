@@ -17,22 +17,6 @@ class SessionsController
         return (strtotime($a) <= strtotime($b)) ? $a : $b;
     }
 
-    /**
-     * Round minutes UP to nearest 30-min block, with minimum 30 minutes if > 0.
-     * Examples:
-     * 0  -> 0
-     * 7  -> 30
-     * 30 -> 30
-     * 31 -> 60
-     * 61 -> 90
-     */
-    private static function billableMinutes(int $rawMinutes): int
-    {
-        if ($rawMinutes <= 0) return 0;
-        if ($rawMinutes < 30) return 30;
-        return (int)(ceil($rawMinutes / 30) * 30);
-    }
-
     public static function start(): void
     {
         $body = Request::json();
@@ -100,7 +84,7 @@ class SessionsController
         $paymentMethod = trim((string)($body["payment_method"] ?? "cash"));
         if ($paymentMethod === "") $paymentMethod = "cash";
 
-        // Only allow these for now (optional strictness)
+        // Only allow these for now
         $allowed = ["cash", "bank_transfer"];
         if (!in_array($paymentMethod, $allowed, true)) {
             Response::json(["error" => "Invalid payment_method. Use cash or bank_transfer"], 422);
@@ -130,24 +114,26 @@ class SessionsController
         // Actual minutes (raw)
         $diffSeconds = max($endTs - $startTs, 0);
         $rawMinutes = (int)ceil($diffSeconds / 60);
-        $billableMinutes = self::billableMinutes($rawMinutes);
 
-        // Billable minutes (human-friendly rounding)
-        $billableMinutes = self::billableMinutes($rawMinutes);
-
-        $childrenCount = (int)($session["children_count"] ?? 0);
-        if ($childrenCount <= 0) $childrenCount = 1;
-
-        // Price: Rs 1000 per hour per child
-        $normalPrice = (int)round(($billableMinutes / 60) * 1000 * $childrenCount);
+        // ✅ NEW PRICING (per parent)
+        // 1) If session started, charge minimum Rs 1000 up to 2 hours
+        // 2) After 2 hours: Rs 500 per extra 30 minutes (rounded up)
+        if ($rawMinutes <= 0) {
+            $normalPrice = 0; // safety
+        } elseif ($rawMinutes <= 120) {
+            $normalPrice = 1000;
+        } else {
+            $extra = $rawMinutes - 120;
+            $blocks = (int)ceil($extra / 30); // 30-min blocks
+            $normalPrice = 1000 + ($blocks * 500);
+        }
 
         // Discount logic later (rewards)
         $discountAmount = 0;
         $finalPrice = max($normalPrice - $discountAmount, 0);
 
-        // For now we store BILLABLE minutes in duration_minutes
-        // (If later you add a billable_minutes column, we can store both.)
-        $durationMinutes = $billableMinutes;
+        // Store actual played minutes
+        $durationMinutes = $rawMinutes;
 
         $updated = SessionsRepository::endSession(
             $pdo,
