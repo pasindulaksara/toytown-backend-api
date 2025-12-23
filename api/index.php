@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set("Asia/Colombo");
 
 // CORS (local dev)
 header("Access-Control-Allow-Origin: *");

@@ -54,45 +54,57 @@ class SessionsRepository
     }
 
     public static function getSessions(PDO $pdo, string $status = ""): array
-    {
-        $status = trim($status);
+{
+    $status = trim($status);
 
-        if ($status !== "") {
-            $stmt = $pdo->prepare("
-                SELECT s.*,
-                       (SELECT COUNT(*) FROM session_children sc WHERE sc.session_id = s.id) AS children_count
-                FROM sessions s
-                WHERE s.status = ?
-                ORDER BY s.id DESC
-                LIMIT 200
-            ");
-            $stmt->execute([$status]);
-            return $stmt->fetchAll();
-        }
-
-        $stmt = $pdo->query("
+    if ($status !== "") {
+        $stmt = $pdo->prepare("
             SELECT s.*,
+                   p.name AS parent_name,
+                   p.phone AS parent_phone,
                    (SELECT COUNT(*) FROM session_children sc WHERE sc.session_id = s.id) AS children_count
             FROM sessions s
+            JOIN parents p ON p.id = s.parent_id
+            WHERE s.status = ?
             ORDER BY s.id DESC
             LIMIT 200
         ");
+        $stmt->execute([$status]);
         return $stmt->fetchAll();
     }
 
-    public static function getById(PDO $pdo, int $id): ?array
-    {
-        $stmt = $pdo->prepare("
-            SELECT s.*,
-                   (SELECT COUNT(*) FROM session_children sc WHERE sc.session_id = s.id) AS children_count
-            FROM sessions s
-            WHERE s.id = ?
-            LIMIT 1
-        ");
-        $stmt->execute([$id]);
-        $row = $stmt->fetch();
-        return $row ?: null;
-    }
+    $stmt = $pdo->query("
+        SELECT s.*,
+               p.name AS parent_name,
+               p.phone AS parent_phone,
+               (SELECT COUNT(*) FROM session_children sc WHERE sc.session_id = s.id) AS children_count
+        FROM sessions s
+        JOIN parents p ON p.id = s.parent_id
+        ORDER BY s.id DESC
+        LIMIT 200
+    ");
+    return $stmt->fetchAll();
+}
+
+public static function getById(PDO $pdo, int $id): ?array
+{
+    $stmt = $pdo->prepare("
+        SELECT s.*,
+               p.name AS parent_name,
+               p.phone AS parent_phone,
+               (SELECT COUNT(*) FROM session_children sc WHERE sc.session_id = s.id) AS children_count
+        FROM sessions s
+        JOIN parents p ON p.id = s.parent_id
+        WHERE s.id = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$id]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+
+   
 
     public static function endSession(PDO $pdo, int $id, string $endTime, int $durationMinutes, string $paymentMethod, int $normalPrice, int $discountAmount, int $finalPrice): ?array
     {
